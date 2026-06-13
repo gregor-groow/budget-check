@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 const CLIENT_NAMES = {
   zahradnicka: 'Immocap – Záhradnícka',
   kvarter: 'Kvarter',
+  istropolis: 'Istropolis',
 };
 
 export default function Dashboard() {
