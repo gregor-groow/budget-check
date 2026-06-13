@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 
-let budgetData = null;
+// In-memory store per client
+let budgetData = {};
 
 export async function POST(request) {
   try {
@@ -11,17 +12,21 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    budgetData = {
+    const client = body.client || 'default';
+    budgetData[client] = {
       ...body,
       updatedAt: new Date().toISOString(),
     };
 
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ ok: true, client });
   } catch (e) {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
 }
 
 export async function GET() {
-  return NextResponse.json(budgetData || { empty: true });
+  if (Object.keys(budgetData).length === 0) {
+    return NextResponse.json({ empty: true });
+  }
+  return NextResponse.json(budgetData);
 }
