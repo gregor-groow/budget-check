@@ -2,6 +2,11 @@
 
 import { useEffect, useState } from 'react';
 
+const CLIENT_NAMES = {
+  zahradnicka: 'Immocap – Záhradnícka',
+  kvarter: 'Kvarter',
+};
+
 export default function Dashboard() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -18,8 +23,7 @@ export default function Dashboard() {
     return () => clearInterval(interval);
   }, []);
 
-  const google = data?.google || {};
-  const meta = data?.meta || {};
+  const clients = data && !data.empty ? Object.keys(data) : [];
 
   return (
     <div style={{ minHeight: '100vh', background: '#0d0618', fontFamily: "'Inter', 'Arial', sans-serif", color: '#fff' }}>
@@ -36,13 +40,11 @@ export default function Dashboard() {
           </div>
         </div>
         <div style={{ fontSize: 12, color: '#6b4fa0', textAlign: 'right' }}>
-          {data?.google?.datum ? (
-            <>Posledná aktualizácia<br /><span style={{ color: '#a78bda' }}>{data.google.datum}</span></>
-          ) : null}
+          Auto-refresh každých 60s
         </div>
       </div>
 
-      <div style={{ maxWidth: 1100, margin: '0 auto', padding: '40px 24px' }}>
+      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '40px 24px' }}>
 
         {loading && (
           <div style={{ textAlign: 'center', color: '#6b4fa0', padding: 80, fontSize: 16 }}>Načítavam dáta...</div>
@@ -55,12 +57,26 @@ export default function Dashboard() {
           </div>
         )}
 
-        {!loading && data && !data.empty && (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 32 }}>
-            <PlatformCard title="Google Ads" icon="🔵" color="#4285F4" data={google} />
-            <PlatformCard title="Meta Ads" icon="🟣" color="#1877F2" data={meta} />
+        {!loading && clients.map(clientKey => (
+          <div key={clientKey} style={{ marginBottom: 48 }}>
+            {/* Client header */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+              <div style={{ width: 4, height: 28, background: '#7c3aed', borderRadius: 2 }} />
+              <h2 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: '#e0d4f7' }}>
+                {CLIENT_NAMES[clientKey] || clientKey}
+              </h2>
+              <span style={{ fontSize: 11, color: '#6b4fa0', marginLeft: 8 }}>
+                Aktualizované: {data[clientKey]?.updatedAt ? new Date(data[clientKey].updatedAt).toLocaleString('sk-SK') : '–'}
+              </span>
+            </div>
+
+            {/* Google + Meta cards */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
+              <PlatformCard title="Google Ads" icon="🔵" color="#4285F4" data={data[clientKey]?.google} />
+              <PlatformCard title="Meta Ads" icon="🟣" color="#1877F2" data={data[clientKey]?.meta} />
+            </div>
           </div>
-        )}
+        ))}
       </div>
 
       <div style={{ textAlign: 'center', padding: '24px', color: '#2d1155', fontSize: 12, borderTop: '1px solid #1a0533' }}>
@@ -88,8 +104,6 @@ function PlatformCard({ title, icon, color, data }) {
 
   return (
     <div style={{ background: '#1a0533', border: '1px solid #2d1155', borderRadius: 16, overflow: 'hidden' }}>
-
-      {/* Platform header */}
       <div style={{ background: `${color}22`, borderBottom: '1px solid #2d1155', padding: '16px 24px', display: 'flex', alignItems: 'center', gap: 10 }}>
         <span style={{ fontSize: 20 }}>{icon}</span>
         <span style={{ fontWeight: 700, fontSize: 16, color: '#fff' }}>{title}</span>
@@ -97,8 +111,6 @@ function PlatformCard({ title, icon, color, data }) {
       </div>
 
       <div style={{ padding: 24 }}>
-
-        {/* Top cards */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginBottom: 20 }}>
           <MiniCard label="Budget" value={`€${data.budget}`} />
           <MiniCard label="Spend MTD" value={`€${data.totalSpend}`} accent color={color} />
@@ -108,7 +120,6 @@ function PlatformCard({ title, icon, color, data }) {
           </div>
         </div>
 
-        {/* Progress bar */}
         <div style={{ marginBottom: 20 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
             <span style={{ fontSize: 12, color: '#a78bda' }}>Plnenie budgetu</span>
@@ -128,7 +139,6 @@ function PlatformCard({ title, icon, color, data }) {
           </div>
         </div>
 
-        {/* Detail */}
         {[
           ['Dni v mesiaci', data.daysInMonth],
           ['Ubehnuté dni', data.daysPassed],
