@@ -1,7 +1,26 @@
 import { NextResponse } from 'next/server';
 
-// In-memory store per client
-let budgetData = {};
+const KV_URL = process.env.KV_REST_API_URL;
+const KV_TOKEN = process.env.KV_REST_API_TOKEN;
+
+async function kvGet(key) {
+  const res = await fetch(`${KV_URL}/get/${key}`, {
+    headers: { Authorization: `Bearer ${KV_TOKEN}` },
+  });
+  const data = await res.json();
+  return data.result ? JSON.parse(data.result) : null;
+}
+
+async function kvSet(key, value) {
+  await fetch(`${KV_URL}/set/${key}`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${KV_TOKEN}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(value),
+  });
+}
 
 export async function POST(request) {
   try {
@@ -13,20 +32,46 @@ export async function POST(request) {
     }
 
     const client = body.client || 'default';
-    budgetData[client] = {
+    const dataToStore = {
       ...body,
       updatedAt: new Date().toISOString(),
     };
 
+    await kvSet(`budget:${client}`, JSON.stringify(dataToStore));
+
+    // Update list of clients
+    const clientsRaw = await kvGet('budget:clients');
+    const clients = clientsRaw || [];
+    if (!clients.includes(client)) {
+      clients.push(client);
+      await kvSet('budget:clients', JSON.stringify(clients));
+    }
+
     return NextResponse.json({ ok: true, client });
   } catch (e) {
-    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
+    console.error(e);
+    return NextResponse.json({ error: 'Error' }, { status: 500 });
   }
 }
 
 export async function GET() {
-  if (Object.keys(budgetData).length === 0) {
+  try {
+    const clientsRaw = await kvGet('budget:clients');
+    const clients = clientsRaw || [];
+
+    if (clients.length === 0) {
+      return NextResponse.json({ empty: true });
+    }
+
+    const result = {};
+    for (const client of clients) {
+      const data = await kvGet(`budget:${client}`);
+      if (data) result[client] = data;
+    }
+
+    return NextResponse.json(result);
+  } catch (e) {
+    console.error(e);
     return NextResponse.json({ empty: true });
   }
-  return NextResponse.json(budgetData);
 }
