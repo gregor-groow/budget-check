@@ -22,11 +22,16 @@ export async function POST(request) {
     const client = body.client || 'default';
     const dataToStore = { ...body, updatedAt: new Date().toISOString() };
 
-    // SET budget:client JSON string
+    // Store client data as string
     await redisCmd('SET', `budget:${client}`, JSON.stringify(dataToStore));
 
-    // Add to clients set
-    await redisCmd('SADD', 'budget:clients', client);
+    // Update clients list as JSON array string
+    const existingRaw = await redisCmd('GET', 'budget:clients');
+    const clients = existingRaw ? JSON.parse(existingRaw) : [];
+    if (!clients.includes(client)) {
+      clients.push(client);
+      await redisCmd('SET', 'budget:clients', JSON.stringify(clients));
+    }
 
     return NextResponse.json({ ok: true, client });
   } catch (e) {
@@ -37,12 +42,10 @@ export async function POST(request) {
 
 export async function GET() {
   try {
-    // Get all clients
-    const clients = await redisCmd('SMEMBERS', 'budget:clients');
+    const clientsRaw = await redisCmd('GET', 'budget:clients');
+    const clients = clientsRaw ? JSON.parse(clientsRaw) : [];
 
-    if (!clients || clients.length === 0) {
-      return NextResponse.json({ empty: true });
-    }
+    if (clients.length === 0) return NextResponse.json({ empty: true });
 
     const result = {};
     for (const client of clients) {
