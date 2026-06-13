@@ -6,6 +6,7 @@ const CLIENT_NAMES = {
   zahradnicka: 'Immocap – Záhradnícka',
   kvarter: 'Kvarter',
   istropolis: 'Istropolis',
+  millhaus: 'Millhaus',
 };
 
 export default function Dashboard() {
