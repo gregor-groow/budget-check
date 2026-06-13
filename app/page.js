@@ -7,7 +7,7 @@ const CLIENT_NAMES = {
   kvarter: 'Kvarter',
   istropolis: 'Istropolis',
   millhaus: 'Millhaus',
-  eclair: 'Eclair',
+  Eclair: 'Eclair',
 };
 
 export default function Dashboard() {
